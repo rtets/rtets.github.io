@@ -1,0 +1,187 @@
+<html>
+    <head>
+        <title>Rotations</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    </head>
+    <body>
+        <div class="container col-xl-10 col-xxl-8 px-4 py-5">
+            <div class="row align-items-center g-lg-5 py-5">
+              <div class="col-lg-7 text-center text-lg-start">
+                <h1 class="display-4 fw-bold lh-1 text-body-emphasis mb-3">Rotations</h1>
+                <p class="col-lg-10 fs-4">So we never squabble about who's turn it is again...</p>
+                <div class="btn-group justify-content-between config_buttons" role="group"  style="margin-top: 5;">
+                    <button type="button" class="btn btn-dark rotate_button" onclick="rotate()">Rotate</button>
+                    <div class="btn-group " role="group">
+                        <button type="button" class="btn btn-info dropdown-toggle turn_length_button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Turn Length: 5 Mins
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark">
+                        <li><a class="dropdown-item dropdown-item-danger" href="javascript: durate(0.5, '30 Secs');">30 Secs</a></li>
+                        <li><a class="dropdown-item dropdown-item-success" href="javascript: durate(5, '5 Mins');">5 Mins</a></li>
+                        <li><a class="dropdown-item dropdown-item-warning" href="javascript: durate(10, '10 Mins');">10 Mins</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <br/>
+                <div class="btn-group justify-content-between control_buttons" role="group" style="margin-top: 5;">
+                    <button type="button" class="btn btn-primary turn_start_button" onclick="start()">Start</button>
+                    <button type="button" class="btn btn-danger turn_stop_button" onclick="stop()" disabled="true">Stop</button>
+                    <button type="button" class="btn btn-success turn_reset_button" onclick="reset()" disabled="true">Reset</button>
+                </div>
+                <br/><br/>
+                <div>
+                    <div class="progress turn_progress" role="progressbar" aria-label="Progression towards the inevitable!" width="250" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated turn_progress_bar" width="250" style="width: 0%">Time Left: 100s</div>
+                    </div>
+                </div>
+            </div>
+              <div class="col-md-10 mx-auto col-lg-5">
+                <div class="card" style="width: 18rem;">
+                    <img src="./assets/img/mystery_turn.jpg" class="card-img-top turn_image" alt="Turn Logo">
+                    <div class="card-body">
+                        <p class="card-text turn_description" style="text-align: center;">It's <span class="turn_name" style="font-weight: bold;">Mystery</span>'s turn</p>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+        <script type="text/javascript">
+            
+            const PROGRESS_BAR_INTERVAL = 1000;
+            const State = {
+                Initial: "Initial",
+                Running: "Running",
+                Stopped: "Stopped"
+            };
+            const ButtonsByState = {
+                "Initial": {
+                    enabled: ["rotate_button", "turn_length_button", "turn_start_button"],
+                    disabled: ["turn_stop_button", "turn_reset_button"],
+                },
+                "Running": {
+                    enabled: ["turn_stop_button"],
+                    disabled: ["rotate_button", "turn_length_button", "turn_start_button", "turn_reset_button"],
+                },
+                "Stopped": {
+                    enabled: ["turn_start_button", "turn_reset_button"],
+                    disabled: ["turn_stop_button", "rotate_button", "turn_length_button"],
+                }
+            }
+            const Rotatee = (name, logo) => {
+                return {
+                    name: name,
+                    logo: logo
+                }
+            };
+
+            document.rotation = [];
+            document.rotation_index = -1;
+            document.turn_length = 300000;
+            document.progress = 0;
+
+            document.turn_interval = undefined;
+            
+
+            function durate(duration_mins, duration_friendly) {
+                document.turn_length = duration_mins * 60000;
+                $(".turn_length_button").text("Turn length: " + duration_friendly);
+            }
+            
+            function rotate() {
+                document.rotation_index = (document.rotation_index + 1) % document.rotation.length;
+                document.progress = 0;
+                const name = document.rotation[document.rotation_index].name;
+                const img = document.rotation[document.rotation_index].logo;
+                const desc = "It's " + name + "'s turn."
+                $(".turn_image").attr("src", img);
+                $(".turn_name").text(name);
+                //$(".turn_description").text(desc);
+            }
+
+            function nice_time(remaining) {
+                const mins = Math.floor(remaining / 60);
+                const secs = remaining % 60;
+                if (mins) {
+                    return mins + "m " + secs + "s";
+                }
+                return secs + "s";
+            }
+            
+            function update_progress(progress_delta) {
+                document.progress += progress_delta;
+                document.progress_pct = Math.round(100 * (document.progress/document.turn_length));
+                const time_left = Math.round((document.turn_length - document.progress) / 1000);
+
+                if (document.progress_pct >= 100) {
+                    rotate();
+                    document.progress_pct = 0;
+                }
+                $(".turn_progress").attr("aria-valuenow", document.progress_pct);
+                $(".turn_progress_bar").attr("style", "width: " + document.progress_pct + "%;");
+                $(".turn_progress_bar").text("Remaining: " + nice_time(time_left));
+            }
+
+            function set_buttons_status_by_class(classes, enabled) {
+                classes.forEach(function do_it(clz) {
+                    $("." + clz).prop("disabled", !enabled);
+                });
+            }
+
+            function set_buttons_for_state(enabled, disabled) {
+                set_buttons_status_by_class(enabled, true);
+                set_buttons_status_by_class(disabled, false);
+            }
+            
+            function start() {
+                const newState = State.Running;
+
+                set_buttons_for_state(ButtonsByState[newState].enabled, ButtonsByState[newState].disabled);
+                document.turn_interval = setInterval(update_progress, PROGRESS_BAR_INTERVAL, PROGRESS_BAR_INTERVAL);
+            }
+
+            function stop() {
+                const newState = State.Stopped;
+
+                set_buttons_for_state(ButtonsByState[newState].enabled, ButtonsByState[newState].disabled);
+                clearInterval(document.turn_interval);
+            }
+
+            function reset() {
+                const newState = State.Initial;
+
+                set_buttons_for_state(ButtonsByState[newState].enabled, ButtonsByState[newState].disabled);
+                document.progress = 0;
+                update_progress(0);
+            }
+
+            function* image_options() {
+                const turn_images = ["turn1", "turn2", "turn3", "turn4", "turn5"];
+                while (true) {
+                    for (let i=0; i<turn_images.length; i++) {
+                        var img_name = turn_images[i];
+                        yield "./assets/img/" + img_name + ".jpg";
+                    }
+                }
+            }
+
+            $(document).ready(() => {
+                const params = new Proxy(new URLSearchParams(window.location.search), {
+                  get: (searchParams, prop) => searchParams.get(prop),
+                });
+
+                if (params["names"]) {
+                    const images = image_options();
+                    params["names"].split(",").forEach((name) => {
+                        document.rotation.push(Rotatee(name, images.next().value))
+                    });
+                }
+
+                rotate();
+            });
+
+        </script>
+    </body>
+</html>
